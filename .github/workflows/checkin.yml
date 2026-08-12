@@ -42,6 +42,6 @@ jobs:
           FORUM_COOKIE: ${{ secrets.FORUM_COOKIE }}
           PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
           SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
-        run: python wnflb_checkin.py
-        # 脚本异常也不阻断 cache 保存，尽量留存最新 cookie
-        continue-on-error: true
+        run: |
+          python -u wnflb_checkin.py 2>&1
+          echo "脚本退出码: $?"
