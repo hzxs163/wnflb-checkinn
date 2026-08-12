@@ -73,5 +73,9 @@ jobs:
           XIATUISHE_TOKEN: ${{ secrets.XIATUISHE_TOKEN }}
           XIATUISHE_SERVER: ${{ secrets.XIATUISHE_SERVER }}
         run: |
+          echo "========调试========"
+          echo "XIATUISHE_TOKEN 变量长度: ${#XIATUISHE_TOKEN}"
+          if [ -z "$XIATUISHE_TOKEN" ]; then echo ">>> XIATUISHE_TOKEN 在CI环境为空"; else echo ">>> XIATUISHE_TOKEN 已载入"; fi
+          echo "===================="
           python -u wnflb_checkin.py 2>&1
           echo "脚本退出码: $?"
