@@ -37,5 +37,4 @@ def send_notification(title: str, content: str):
 
 
 if __name__ == "__main__":
-    # send_notification("测试标题", "测试消息内容")
     main()
