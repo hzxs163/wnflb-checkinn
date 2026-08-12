@@ -9,7 +9,7 @@ def send_notification(title: str, content: str):
     支持：Telegram、Bark、Gotify、WxPusher、企业微信机器人、NotifyX、通用Webhook、虾推啥
     """
 
-    # -------------------------- Telegram (HTML模式，借鉴旧项目) --------------------------
+    # -------------------------- Telegram (HTML模式) --------------------------
     tg_bot_token = os.getenv("TG_BOT_TOKEN", "").strip()
     tg_chat_id = os.getenv("TG_CHAT_ID", "").strip()
     if tg_bot_token and tg_chat_id:
@@ -34,14 +34,14 @@ def send_notification(title: str, content: str):
         except Exception as e:
             print(f"[Bark推送异常] {str(e)}")
 
-    # -------------------------- Gotify --------------------------
+    # -------------------------- Gotify 修复：全部改为英文半角符号 --------------------------
     gotify_url = os.getenv("GOTIFY_URL", "").strip()
     gotify_token = os.getenv("GOTIFY_TOKEN", "").strip()
     if gotify_url and gotify_token:
         try:
             url = f"{gotify_url.rstrip('/')}/message"
             payload = {"title": title, "message": content, "priority": 5}
-            headers = {"X‑Gotify‑Key": gotify_token}
+            headers = {"X-Gotify-Key": gotify_token}
             requests.post(url, json=payload, headers=headers, timeout=15)
         except Exception as e:
             print(f"[Gotify推送异常] {str(e)}")
@@ -98,6 +98,7 @@ def send_notification(title: str, content: str):
     xts_token = os.getenv("XIATUISHE_TOKEN", "").strip()
     xts_server = os.getenv("XIATUISHE_SERVER", "https://wx.xtuis.cn").strip()
     if xts_token:
+        print("[虾推啥] 检测到token，开始发起推送")
         try:
             url = f"{xts_server}/{xts_token}.send"
             params = {
@@ -108,22 +109,24 @@ def send_notification(title: str, content: str):
                 url,
                 params=params,
                 timeout=10,
-                headers={"User‑Agent": "AutoCheckin/1.0"}
+                headers={"User-Agent": "AutoCheckin/1.0"}
             )
             if resp.status_code == 200:
                 res_text = resp.text.strip()
-                if not any(k in res_text.lower() for k in ("success", "ok", "成功")):
-                    print(f"[虾推啥返回非成功] {res_text}")
+                if any(k in res_text.lower() for k in ("success", "ok", "成功")):
+                    print("[虾推啥] 推送成功")
+                else:
+                    print(f"[虾推啥] 返回: {res_text}")
             else:
-                print(f"[虾推啥HTTP错误] status={resp.status_code}")
+                print(f"[虾推啥] HTTP错误 status={resp.status_code}")
         except requests.exceptions.Timeout:
-            print("[虾推啥推送超时]")
+            print("[虾推啥] 推送超时")
         except requests.exceptions.ConnectionError:
-            print("[虾推啥连接失败]")
+            print("[虾推啥] 连接失败")
         except Exception as e:
-            print(f"[虾推啥推送异常] {str(e)}")
+            print(f"[虾推啥] 推送异常: {str(e)}")
 
-    # 判断是否全部渠道都未配置
+    # 全部渠道判断，全部使用普通字符串，杜绝全角符号干扰
     all_env = [
         tg_bot_token, tg_chat_id, bark_url,
         gotify_url, gotify_token, wxpusher_token, wxpusher_uids,
