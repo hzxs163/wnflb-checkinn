@@ -8,9 +8,11 @@
   2. 直接传入 Cookie（兼容旧方式）
 
 特性：
+  - 多域名自动探测，站点更换域名无需修改代码
   - 登录成功后把 Cookie 保存到本地/cache，下次优先复用
   - Cookie 失效自动重新用账号密码登录（含验证码）
   - 新 IP 登录需要验证码时自动拉取并识别（ddddocr）
+  - 签到完成输出账户积分余额
   - 支持 PushPlus / Server 酱 微信推送（推送逻辑独立到 notifier.py）
   - 论坛为 GBK 编码，已做兼容
 
@@ -38,12 +40,14 @@ import requests
 from notifier import send_notification
 
 # ========================= 配置 =========================
-BASE_URL = "https://www.wnflb2023.com"
-FORUM_URL = BASE_URL + "/forum.php"
-LOGIN_PAGE_URL = BASE_URL + "/member.php?mod=logging&action=login"
-TIMEOUT = 30
-MAX_RETRIES = 3
-RETRY_DELAY = 5
+# 域名候选列表，新域名加到列表最前面
+BASE_URLS = [
+    'https://www.wnflb2023.com',
+    'https://www.wnflb00.com',
+    'https://www.wnflb99.com'
+]
+BASE_URL = None
+DETECT_TIMEOUT = 10
 
 HEADERS = {
     "User-Agent": (
@@ -54,6 +58,29 @@ HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 }
+
+# 自动探测可用域名
+def detect_base_url() -> str:
+    print("===== 开始检测可用站点 =====")
+    for url in BASE_URLS:
+        try:
+            resp = requests.get(url, timeout=DETECT_TIMEOUT, headers=HEADERS, allow_redirects=False)
+            if resp.status_code == 200:
+                print(f"✅ 检测到可用站点: {url}\n")
+                return url
+            print(f"站点 [{url}] 响应码：{resp.status_code}，不可用")
+        except requests.exceptions.RequestException as e:
+            print(f"站点 [{url}] 访问失败，异常信息：{str(e)}")
+            continue
+    raise ConnectionError("所有候选URL均不可用，请更新站点域名、检查网络或配置代理")
+
+# 初始化全局BASE_URL
+BASE_URL = detect_base_url()
+FORUM_URL = BASE_URL + "/forum.php"
+LOGIN_PAGE_URL = BASE_URL + "/member.php?mod=logging&action=login"
+TIMEOUT = 30
+MAX_RETRIES = 3
+RETRY_DELAY = 5
 
 
 # ========================= 工具函数 =========================
@@ -573,6 +600,33 @@ def parse_result(text):
     return False, f"未知响应: {clean[:200]}"
 
 
+# ========================= 新增：账户积分余额查询 =========================
+def get_balance(session):
+    balance_url = f'{BASE_URL}/home.php?mod=spacecp&ac=credit&showcredit=1'
+    try:
+        res = session.get(balance_url, timeout=TIMEOUT)
+        res.raise_for_status()
+        html = get_page_text(res)
+        matches = re.findall(r'<em>\s*([^:]+):\s*</em>(\d+)', html)
+        balance_data = {name.strip(): value for name, value in matches}
+        if not balance_data:
+            print("⚠️ 未解析到余额信息")
+            return {}
+        max_len = max(len(name) for name in balance_data.keys())
+        border = "=" * (max_len + 10)
+        print(f"\n{border}\n  账户余额信息  \n{border}")
+        for name, value in balance_data.items():
+            print(f"{name.rjust(max_len)} : {value}")
+        print(f"{border}\n")
+        return balance_data
+    except requests.exceptions.RequestException as e:
+        print(f"🚨 余额获取失败: {e}")
+        return {}
+    except Exception as e:
+        print(f"⚠️ 发生意外错误: {e}")
+        return {}
+
+
 # ========================= 调试：解析登录页 =========================
 
 def inspect_login():
@@ -616,6 +670,7 @@ def main():
     print("=" * 50)
     print("  福利吧论坛自动签到")
     print(f"  模式: {args.mode}   时间: {now}")
+    print(f"  当前站点: {BASE_URL}")
     print("=" * 50)
 
     session = requests.Session()
@@ -663,6 +718,7 @@ def main():
         print("[OK] 今日已签到，无需重复操作")
         send_notification(f"[签到成功] {args.mode}",
                           f"时间:{now}\n状态:今日已签到")
+        get_balance(session)
         sys.exit(0)
     print("  -> 今日尚未签到，执行签到 ...")
 
@@ -685,6 +741,9 @@ def main():
         send_notification(f"[签到失败] {args.mode}",
                           f"时间:{now}\n结果:{message}")
         sys.exit(1)
+
+    # 4) 输出账户积分余额
+    get_balance(session)
 
 
 if __name__ == "__main__":
