@@ -720,9 +720,13 @@ def main():
     print("[3] 检查签到状态 ...")
     if check_already_signed(html):
         print("[OK] 今日已签到，无需重复操作")
-        send_notification(f"[签到成功] {args.mode}",
-                          f"时间:{now}\n状态:今日已签到")
-        get_balance(session)
+        balance_data, balance_text = get_balance(session)
+        push_content = (
+            f"{balance_text}"
+            f"时间：{now}\n"
+            f"状态：今日已签到"
+        )
+        send_notification("福利吧签到提醒：签到成功", push_content)
         sys.exit(0)
     print("  -> 今日尚未签到，执行签到 ...")
 
@@ -738,16 +742,18 @@ def main():
     success, message = parse_result(text)
     if success:
         print(f"[OK] {message}")
-        send_notification(f"[签到成功] {args.mode}",
-                          f"时间:{now}\n结果:{message}")
+        balance_data, balance_text = get_balance(session)
+        push_content = (
+            f"{balance_text}"
+            f"时间：{now}\n"
+            f"状态：{message}"
+        )
+        send_notification("福利吧签到提醒：签到成功", push_content)
     else:
         print(f"[FAIL] {message}")
         send_notification(f"[签到失败] {args.mode}",
                           f"时间:{now}\n结果:{message}")
         sys.exit(1)
-
-    # 4) 输出账户积分余额
-    get_balance(session)
 
 
 if __name__ == "__main__":
