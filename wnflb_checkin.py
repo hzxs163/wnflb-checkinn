@@ -614,9 +614,9 @@ def get_balance(session):
             print("⚠️ 未解析到余额信息")
             return balance_data, balance_text
         max_len = max(len(name) for name in balance_data.keys())
-        border = "=" * (max_len + 10)
-        print(f"\n{border}\n  账户余额信息  \n{border}")
-        balance_text += f"{border}\n  账户余额信息  \n{border}\n"
+        border = "=" * 16
+        print(f"\n{border}\n账户余额信息\n{border}")
+        balance_text += f"{border}\n账户余额信息\n{border}\n"
         for name, value in balance_data.items():
             line = f"{name.rjust(max_len)} : {value}"
             print(line)
