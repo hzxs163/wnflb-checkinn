@@ -606,7 +606,7 @@ def get_balance(session):
     try:
         res = session.get(balance_url, timeout=TIMEOUT)
         res.raise_for_status()
-        html = get_page_text(res)
+        html = get_page_text(res)   # 关键：使用封装函数做GBK解码
         matches = re.findall(r'<em>\s*([^:]+):\s*</em>(\d+)', html)
         balance_data = {name.strip(): value for name, value in matches}
         if not balance_data:
