@@ -27,6 +27,9 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.txt
 
+      - name: 列出目录文件，确认文件存在
+        run: ls -la *.py
+
       - name: 恢复 Cookie 缓存
         uses: actions/cache@v4
         with:
@@ -40,8 +43,35 @@ jobs:
           FORUM_USERNAME: ${{ secrets.FORUM_USERNAME }}
           FORUM_PASSWORD: ${{ secrets.FORUM_PASSWORD }}
           FORUM_COOKIE: ${{ secrets.FORUM_COOKIE }}
-          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
-          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+
+          # Telegram
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+
+          # Bark
+          BARK_URL: ${{ secrets.BARK_URL }}
+
+          # Gotify
+          GOTIFY_URL: ${{ secrets.GOTIFY_URL }}
+          GOTIFY_TOKEN: ${{ secrets.GOTIFY_TOKEN }}
+
+          # WxPusher
+          WXPUSHER_TOKEN: ${{ secrets.WXPUSHER_TOKEN }}
+          WXPUSHER_UIDS: ${{ secrets.WXPUSHER_UIDS }}
+
+          # 企业微信机器人 webhook
+          WECOM_WEBHOOK: ${{ secrets.WECOM_WEBHOOK }}
+
+          # NotifyX
+          NOTIFYX_URL: ${{ secrets.NOTIFYX_URL }}
+          NOTIFYX_TOKEN: ${{ secrets.NOTIFYX_TOKEN }}
+
+          # 通用 Webhook
+          GENERIC_WEBHOOK: ${{ secrets.GENERIC_WEBHOOK }}
+
+          # 虾推啥
+          XIATUISHE_TOKEN: ${{ secrets.XIATUISHE_TOKEN }}
+          XIATUISHE_SERVER: ${{ secrets.XIATUISHE_SERVER }}
         run: |
           python -u wnflb_checkin.py 2>&1
           echo "脚本退出码: $?"
