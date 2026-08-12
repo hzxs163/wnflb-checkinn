@@ -107,14 +107,14 @@ def cookies_to_header(session):
 
 
 def get_page_text(resp):
-    """优先按 GBK 解码（论坛是 GBK）"""
-    if resp.encoding and resp.encoding.lower() in ("gbk", "gb2312", "gb18030"):
-        return resp.text
+    """Discuz论坛固定GBK，强制用content二进制解码，不使用resp.text避免编码猜测乱码"""
     try:
         return resp.content.decode("gbk")
-    except (UnicodeDecodeError, LookupError):
-        resp.encoding = resp.apparent_encoding or "utf-8"
-        return resp.text
+    except UnicodeDecodeError:
+        try:
+            return resp.content.decode("gb18030")
+        except UnicodeDecodeError:
+            return resp.content.decode("utf‑8", errors="replace")
 
 
 def fetch_forum(session):
@@ -606,26 +606,30 @@ def get_balance(session):
     try:
         res = session.get(balance_url, timeout=TIMEOUT)
         res.raise_for_status()
-        html = get_page_text(res)   # 关键：使用封装函数做GBK解码
+        html = get_page_text(res)
         matches = re.findall(r'<em>\s*([^:]+):\s*</em>(\d+)', html)
         balance_data = {name.strip(): value for name, value in matches}
+        balance_text = ""
         if not balance_data:
             print("⚠️ 未解析到余额信息")
-            return {}
+            return balance_data, balance_text
         max_len = max(len(name) for name in balance_data.keys())
         border = "=" * (max_len + 10)
         print(f"\n{border}\n  账户余额信息  \n{border}")
+        balance_text += f"{border}\n  账户余额信息  \n{border}\n"
         for name, value in balance_data.items():
-            print(f"{name.rjust(max_len)} : {value}")
+            line = f"{name.rjust(max_len)} : {value}"
+            print(line)
+            balance_text += line + "\n"
         print(f"{border}\n")
-        return balance_data
+        balance_text += f"{border}\n"
+        return balance_data, balance_text
     except requests.exceptions.RequestException as e:
         print(f"🚨 余额获取失败: {e}")
-        return {}
+        return {}, "⚠️ 余额获取失败\n"
     except Exception as e:
         print(f"⚠️ 发生意外错误: {e}")
-        return {}
-
+        return {}, "⚠️ 余额解析异常\n"
 
 # ========================= 调试：解析登录页 =========================
 
