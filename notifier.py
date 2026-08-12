@@ -34,7 +34,7 @@ def send_notification(title: str, content: str):
         except Exception as e:
             print(f"[Bark推送异常] {str(e)}")
 
-    # -------------------------- Gotify 修复：全部改为英文半角符号 --------------------------
+    # -------------------------- Gotify --------------------------
     gotify_url = os.getenv("GOTIFY_URL", "").strip()
     gotify_token = os.getenv("GOTIFY_TOKEN", "").strip()
     if gotify_url and gotify_token:
@@ -94,13 +94,16 @@ def send_notification(title: str, content: str):
         except Exception as e:
             print(f"[通用Webhook推送异常] {str(e)}")
 
-    # -------------------------- 虾推啥 xiatuishe --------------------------
+    # -------------------------- 虾推啥 xiatuishe 修复空server问题 --------------------------
     xts_token = os.getenv("XIATUISHE_TOKEN", "").strip()
-    xts_server = os.getenv("XIATUISHE_SERVER", "https://wx.xtuis.cn").strip()
+    xts_server_raw = os.getenv("XIATUISHE_SERVER", "").strip()
+    # 如果拿到为空，强制使用官方地址，规避secrets存在但值为空的坑
+    xts_server = xts_server_raw if xts_server_raw else "https://wx.xtuis.cn"
+
     if xts_token:
         print("[虾推啥] 检测到token，开始发起推送")
         try:
-            url = f"{xts_server}/{xts_token}.send"
+            url = f"{xts_server.rstrip('/')}/{xts_token}.send"
             params = {
                 "text": title,
                 "desp": content[:500]
@@ -126,7 +129,7 @@ def send_notification(title: str, content: str):
         except Exception as e:
             print(f"[虾推啥] 推送异常: {str(e)}")
 
-    # 全部渠道判断，全部使用普通字符串，杜绝全角符号干扰
+    # 全部渠道判断
     all_env = [
         tg_bot_token, tg_chat_id, bark_url,
         gotify_url, gotify_token, wxpusher_token, wxpusher_uids,
